@@ -17,6 +17,143 @@ AFD<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv", co
 
 ############################################################################################
 ############################################################################################
+## Compile Fall 2019 Pop Surveys
+############################################################################################
+############################################################################################
+dir = "C:/Users/HaleyOhms/Documents/Carmel/Tag Data/NMFS_Data/TaggingHabitatScouting/2019/POP Surveys 2019/PIT Tagging"
+
+files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
+bnames = basename(files)
+bnames = sub('.xlsx', '',bnames)
+
+for(i in 1:length(files)){
+  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
+                   colClasses = c("character","Date", "numeric", "numeric", "numeric", "numeric",
+                                  "character","numeric", "character", "character", "character", "character", "character"),
+                   stringsAsFactors=FALSE)
+  if(i == 1){
+    fallpop = tbl
+  } else{
+    fallpop = rbind(fallpop, tbl)
+  }
+}
+
+colnames(fallpop) <- c("SiteID", "Date", "FishNum", "Pass", "FL_mm", "Wt_g", "PITnum", "TagSize", "TagorNot", 
+                    "DNAsamp", "Scales", "Recap","Notes")
+
+
+fallpop<-fallpop[!fallpop$SiteID=="" , ] #remove blank columns; thanks excel... not
+fallpop<-fallpop[!fallpop$SiteID==" " , ]
+fallpop$DNAsamp <- fallpop$DNAsamp=="Y" | fallpop$DNAsamp=="T"
+fallpop$Scales <- fallpop$Scales=="Y" | fallpop$Scales=="T"
+fallpop$Recap <- fallpop$Recap=="Y" | fallpop$Recap=="T"
+fallpop$Sex<-NA
+fallpop$Species<-"Om"
+fallpop$SiteTo<-NA
+fallpop$TagorNot<-NULL
+fallpop$TagSize <- as.integer(fallpop$TagSize)
+fallpop$PITnum = as.character(sub(" ", "", fallpop[,"PITnum"])) # Remove space from PITnum
+
+#... combine the rst and AFD data    
+AFD <- rbind(AFD, fallpop)
+AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
+
+write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
+
+
+############################################################################################
+############################################################################################
+## Compile Cachagua Rescues with CRSA spring 2019
+############################################################################################
+############################################################################################
+dir = "C:/Users/HaleyOhms/Documents/Carmel/Tag Data/NMFS_Data/TaggingHabitatScouting/2019/CRSA Rescues"
+
+files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
+bnames = basename(files)
+bnames = sub('.xlsx', '',bnames)
+
+for(i in 1:length(files)){
+  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
+                   colClasses = c("character","Date", "numeric", "numeric", "numeric", "numeric",
+                                  "character","numeric", "character", "character", "character", "character","character"),
+                   stringsAsFactors=FALSE)
+  if(i == 1){
+    crsa = tbl
+  } else{
+    crsa = rbind(crsa, tbl)
+  }
+}
+
+colnames(crsa) <- c("SiteID", "Date", "FishNum", "Pass", "FL_mm", "Wt_g", "PITnum", "TagSize", "TagorNot", 
+                     "DNAsamp", "Scales", "Recap","Notes")
+
+
+crsa<-crsa[!crsa$SiteID=="" , ] #remove blank columns; thanks excel... not
+crsa<-crsa[!crsa$SiteID==" " , ]
+crsa$DNAsamp <- crsa$DNAsamp=="Y" | crsa$DNAsamp=="T"
+crsa$Scales <- crsa$Scales=="Y" | crsa$Scales=="T"
+crsa$Recap <- crsa$Recap=="Y" | crsa$Recap=="T"
+crsa$Sex<-NA
+crsa$Species<-"Om"
+crsa$SiteTo<-NA
+crsa$TagorNot<-NULL
+crsa$TagSize <- as.integer(crsa$TagSize)
+crsa$PITnum = as.character(sub(" ", "", crsa[,"PITnum"])) # Remove space from PITnum
+
+#... combine the rst and AFD data    
+AFD <- rbind(AFD, crsa)
+AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
+
+write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
+
+
+############################################################################################
+############################################################################################
+## Compile Carmel River Lagoon Sampling Data 7/2019 
+############################################################################################
+############################################################################################
+dir = "C:/Users/HaleyOhms/Documents/Carmel/2019LagoonData/"
+
+files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
+bnames = basename(files)
+bnames = sub('.xlsx', '',bnames)
+
+for(i in 1:length(files)){
+  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
+                   colClasses = c("character","Date", "numeric", "numeric", "numeric", "numeric",
+                                  "character","numeric", "character", "character", "character", "character","character"),
+                   stringsAsFactors=FALSE)
+  if(i == 1){
+    crldf = tbl
+  } else{
+    crldf = rbind(crldf, tbl)
+  }
+}
+
+colnames(crldf) <- c("SiteID", "Date", "FishNum", "Pass", "FL_mm", "Wt_g", "PITnum", "TagSize", "TagorNot", 
+                     "DNAsamp", "Scales", "Recap","Notes")
+
+
+crldf<-crldf[!crldf$SiteID=="" , ] #remove blank columns; thanks excel... not
+crldf<-crldf[!crldf$SiteID==" " , ]
+crldf$DNAsamp <- crldf$DNAsamp=="Y" | crldf$DNAsamp=="T"
+crldf$Scales <- crldf$Scales=="Y" | crldf$Scales=="T"
+crldf$Recap <- crldf$Recap=="Y" | crldf$Recap=="T"
+crldf$Sex<-NA
+crldf$Species<-"Om"
+crldf$SiteTo<-NA
+crldf$TagorNot<-NULL
+crldf$TagSize <- as.integer(crldf$TagSize)
+crldf$PITnum = as.character(sub(" ", "", crldf[,"PITnum"])) # Remove space from PITnum
+
+#... combine the rst and AFD data    
+AFD <- rbind(AFD, crldf)
+AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
+
+write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
+
+############################################################################################
+############################################################################################
 ## Compile Adult Data Collected at Los Padres Adult Trap
 ############################################################################################
 ############################################################################################
@@ -126,6 +263,9 @@ AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsam
 
 write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
 
+#write_csv(rstdf,"C:/Users/HaleyOhms/Documents/Carmel/Data Deliveries/2019RST.csv")
+
+
 
 
 ############################################################################################
@@ -133,11 +273,13 @@ write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
 ## Check for and fix duplicate tags
 ############################################################################################
 ############################################################################################
- #... change "" tags to NA
-  #AFD$PITnum[AFD$PITnum==""] <- NA
-  #AFD$PITnum[AFD$PITnum=="NANA"] <- NA  
-  #AFD$PITnum[AFD$PITnum=="NS"] <- NA 
-
+# ... change "" tags to NA
+ AFD$PITnum[AFD$PITnum==""] <- NA
+ AFD$PITnum[AFD$PITnum=="NANA"] <- NA
+ AFD$PITnum[AFD$PITnum=="NS"] <- NA
+ AFD$PITnum[AFD$PITnum=="NaN"] <- NA
+ AFD$PITnum[AFD$PITnum=="na"] <- NA
+ 
 
 Tdat <- filter(AFD, Recap==F, !is.na(PITnum)) #Non-recaps
 dupTags <- Tdat[which(duplicated(Tdat$PITnum)==T) , ]
@@ -149,17 +291,68 @@ AlldupTags <- AlldupTags[order(AlldupTags$PITnum, AlldupTags$Date),]
 #... dataframe saved as .csv
 write_csv(AlldupTags, "C:/Users/HaleyOhms/Documents/Carmel/Database/DuplicateTagData.csv", append = T)
 
-#... change some of the duplicates to recaps (completed: 5/29/29)
+
+#... change some of the duplicates to recaps (completed: 1/22/2020)
+
+
+
+#... change some of the duplicates to recaps (completed: 5/29/19)
 AFD$Recap[which(AFD$SiteID=="Garland" & AFD$PITnum=="900226000324768")] <- T
 AFD$Recap[which(AFD$SiteID=="CarmelRiver" & AFD$PITnum=="900226000594074")] <- T
 AFD$Recap[which(AFD$SiteID=="Redrock" & AFD$PITnum=="900226000594936")] <- T
 AFD<-AFD[!(AFD$SiteID=="CarmelRiver" & AFD$Date=="2018-08-10" & AFD$FishNum==68) , ]
 AFD$Recap[which(AFD$Date=="2018-08-02" & AFD$PITnum=="900228000631381")] <- T
 
-#... change the duplicate numbers to NA in ADF (completed: 5/29/29)
+#... change the duplicate numbers to NA in ADF (completed: 5/29/19)
 DupTs <- unique(AlldupTags$PITnum)  #find the duplicate numbers
 idx <- AFD$PITnum %in% DupTs  #match the duplicates back to the main dataframe (AFD)
 AFD$PITnum[which(idx==T)] <- NA  #change those to NA
 write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
 
+############################################################################################
+############################################################################################
+## Fix site names
+############################################################################################
+############################################################################################
+unique(AFD$SiteID)
+AFD$SiteID[AFD$SiteID=="CDFW Wild Trout 1"] <- "CDFW1"
+AFD$SiteID[AFD$SiteID=="CDFW Wild Trout 2"] <- "CDFW2"
+AFD$SiteID[AFD$SiteID=="SmoltTrap"] <- "2014RescueSmoltTrap"
+AFD$SiteID[AFD$SiteID=="Sleepy Hollow"] <- "Sleepyhollow"
+write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
 
+#... remove "n/a" from adult data sex
+AFD$Sex[AFD$Sex=="n/a"] <- NA
+write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
+
+
+#... deal with morts in notes
+  #unique(AFD$Notes)
+  AFD$Notes[AFD$Notes=="MORT, NO EYES"] <- "Mort"
+  AFD$Notes[AFD$Notes=="MORT"] <- "Mort"
+  AFD$Notes[AFD$Notes=="Mort. Side channel"] <- "Mort"
+  AFD$Notes[AFD$Notes=="Mort. Main channel"] <- "Mort"
+  AFD$Notes[AFD$Notes=="MORT; tag removed"] <- "Mort"
+  AFD$Notes[AFD$Notes=="MORT, no DNA sample"] <- "Mort"
+  AFD$Notes[AFD$Notes=="Drew blood-- MORT, body discarded, tag retrieved"] <- "Mort"
+  AFD$Notes[AFD$Notes=="MORT, body discarded, tag retrieved"] <- "Mort"
+  AFD$Notes[AFD$Notes=="No tag, health concerns; MORT"] <- "Mort"
+  AFD$Notes[AFD$Notes=="Mort, no tag or scales"] <- "Mort"
+  AFD$Notes[AFD$Notes=="mort"] <- "Mort"
+  AFD$Notes[AFD$Notes=="MORT / E-FISHING SCAR"] <- "Mort"
+  AFD$Notes[AFD$Notes=="MORT, EFISHING SCAR"] <- "Mort"
+  AFD$Notes[AFD$Notes=="MORT, E-FISHING SCAR"] <- "Mort"
+write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
+  
+  
+  
+  
+  
+
+   
+  
+    
+  
+   
+   
+  
