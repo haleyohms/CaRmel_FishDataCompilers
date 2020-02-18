@@ -20,6 +20,13 @@ AFD<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv", co
 ## Compile Fall 2019 Pop Surveys
 ############################################################################################
 ############################################################################################
+
+#... made a mistake. need to pull added data and re-add it :\
+# AFD <- AFD %>% filter(!Date > "2019-08-30")
+# write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
+
+
+
 dir = "C:/Users/HaleyOhms/Documents/Carmel/Tag Data/NMFS_Data/TaggingHabitatScouting/2019/POP Surveys 2019/PIT Tagging"
 
 files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
@@ -54,9 +61,139 @@ fallpop$TagorNot<-NULL
 fallpop$TagSize <- as.integer(fallpop$TagSize)
 fallpop$PITnum = as.character(sub(" ", "", fallpop[,"PITnum"])) # Remove space from PITnum
 
+#... error on site 6 date
+fallpop$Date[(fallpop$Date=="2018-09-05" & fallpop$SiteID=="6")] <- "2019-09-05"
+fallpop$Date[(is.na(fallpop$Date) & fallpop$SiteID=="Boronda")] <- "2019-10-02"
+
+#... Clean up morts
+fallpop$Notes[fallpop$Notes=="MORT, NO EYES"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="MORT"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="Mort. Side channel"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="Mort. Main channel"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="MORT; tag removed"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="MORT, no DNA sample"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="Drew blood-- MORT, body discarded, tag retrieved"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="MORT, body discarded, tag retrieved"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="No tag, health concerns; MORT"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="Mort, no tag or scales"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="mort"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="MORT / E-FISHING SCAR"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="MORT, EFISHING SCAR"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="MORT, E-FISHING SCAR"] <- "Mort"
+
+#... Clean up tag numbers
+fallpop$PITnum[fallpop$PITnum=="NaN"] <- NA
+fallpop$PITnum[fallpop$PITnum==""] <- NA
+
+## Deal with duplicates
+Tdat <- filter(fallpop, Recap==F, !is.na(PITnum)) #Non-recaps
+dupTags <- Tdat[which(duplicated(Tdat$PITnum)==T) , ]
+idx <- duplicated(Tdat$PITnum) | duplicated(Tdat$PITnum, fromLast = TRUE) 
+AlldupTags <- Tdat[idx, ] 
+
+fallpop$PITnum[fallpop$PITnum=="na"] <- NA
+
+fallpop$PITnum[fallpop$PITnum=="900226001046800"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900226001046800"] <- "Tag #900226001046800, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900226001046839"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900226001046839"] <- "Tag #900226001046839, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633625"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633625"] <- "Tag #900228000633625, duplicate, removed"
+  
+fallpop$Recap[fallpop$PITnum=="900226001046024" & fallpop$SiteID=="Scarlett" ] <- T
+  
+fallpop$Recap[fallpop$PITnum=="900226001046040" & fallpop$SiteID=="Scarlett" ] <- T
+
+fallpop$Recap[fallpop$PITnum=="900226001046716" & fallpop$SiteID=="Scarlett" ] <- T
+
+fallpop$PITnum[fallpop$PITnum=="900228000633208"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633208"] <- "Tag #900228000633208, duplicate, removed"
+
+fallpop$PITnum[fallpop$PITnum=="900228000633600"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633600"] <- "Tag #900228000633600, duplicate, removed"
+
+fallpop$PITnum[fallpop$PITnum=="900228000633610"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633610"] <- "Tag #900228000633610, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633634"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633634"] <- "Tag #900228000633634, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633636"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633636"] <- "Tag #900228000633636, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633629"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633629"] <- "Tag #900228000633629, duplicate, removed"
+
+fallpop$PITnum[fallpop$PITnum=="900228000633605"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633605"] <- "Tag #900228000633605, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633613"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633613"] <- "Tag #900228000633613, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633622"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633622"] <- "Tag #900228000633622, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633638"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633638"] <- "Tag #900228000633638, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633640"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633640"] <- "Tag #900228000633640, duplicate, removed"
+
+fallpop$PITnum[fallpop$PITnum=="900228000633650"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633650"] <- "Tag #900228000633650, duplicate, removed"
+
+fallpop$PITnum[fallpop$PITnum=="900228000633652"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633652"] <- "Tag #900228000633652, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633654"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633654"] <- "Tag #900228000633654, duplicate, removed"
+
+fallpop$PITnum[fallpop$PITnum=="900228000633658"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633658"] <- "Tag #900228000633658, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633660"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633660"] <- "Tag #900228000633660, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633663"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633663"] <- "Tag #900228000633663, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633670"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633670"] <- "Tag #900228000633670, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633678"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633678"] <- "Tag #900228000633678, duplicate, removed"
+
+fallpop$PITnum[fallpop$PITnum=="900228000633679"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633679"] <- "Tag #900228000633679, duplicate, removed"
+
+fallpop$PITnum[fallpop$PITnum=="900228000633684"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633684"] <- "Tag #900228000633684, duplicate, removed"
+  
+fallpop$PITnum[fallpop$PITnum=="900228000633685"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000633685"] <- "Tag #900228000633685, duplicate, removed"
+  
+  fallpop$Recap[fallpop$PITnum=="900228000633696" & fallpop$SiteID=="Stone Cabin" ] <- T
+  
+fallpop$PITnum[fallpop$PITnum=="900228000689180"] <- NA
+  fallpop$Notes[fallpop$PITnum=="900228000689180"] <- "Tag #900228000689180, duplicate, removed"
+  
+#   
+#   #... DATA FRAME OF DUPLICATE TAGS
+# AlldupTags <- AlldupTags[order(AlldupTags$PITnum, AlldupTags$Date),]
+# #... dataframe saved as .csv
+# write_csv(AlldupTags, "C:/Users/HaleyOhms/Documents/Carmel/Database/DuplicateTagData.csv", append = T)
+
+#... write out fall pop data for D. Boughton
+  write_csv(fallpop,"C:/Users/HaleyOhms/Documents/Carmel/Data Deliveries/FallPop2019.csv")
+ 
+
 #... combine the rst and AFD data    
 AFD <- rbind(AFD, fallpop)
 AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
+
+AFD$PITnum[AFD$PITnum=="na"] <- NA
 
 write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
 
@@ -326,24 +463,8 @@ AFD$Sex[AFD$Sex=="n/a"] <- NA
 write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
 
 
-#... deal with morts in notes
-  #unique(AFD$Notes)
-  AFD$Notes[AFD$Notes=="MORT, NO EYES"] <- "Mort"
-  AFD$Notes[AFD$Notes=="MORT"] <- "Mort"
-  AFD$Notes[AFD$Notes=="Mort. Side channel"] <- "Mort"
-  AFD$Notes[AFD$Notes=="Mort. Main channel"] <- "Mort"
-  AFD$Notes[AFD$Notes=="MORT; tag removed"] <- "Mort"
-  AFD$Notes[AFD$Notes=="MORT, no DNA sample"] <- "Mort"
-  AFD$Notes[AFD$Notes=="Drew blood-- MORT, body discarded, tag retrieved"] <- "Mort"
-  AFD$Notes[AFD$Notes=="MORT, body discarded, tag retrieved"] <- "Mort"
-  AFD$Notes[AFD$Notes=="No tag, health concerns; MORT"] <- "Mort"
-  AFD$Notes[AFD$Notes=="Mort, no tag or scales"] <- "Mort"
-  AFD$Notes[AFD$Notes=="mort"] <- "Mort"
-  AFD$Notes[AFD$Notes=="MORT / E-FISHING SCAR"] <- "Mort"
-  AFD$Notes[AFD$Notes=="MORT, EFISHING SCAR"] <- "Mort"
-  AFD$Notes[AFD$Notes=="MORT, E-FISHING SCAR"] <- "Mort"
-write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/Database/AllFishData.csv")
-  
+
+
   
   
   
