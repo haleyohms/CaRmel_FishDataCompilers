@@ -91,6 +91,8 @@ dupTags <- Tdat[which(duplicated(Tdat$PITnum)==T) , ]
 idx <- duplicated(Tdat$PITnum) | duplicated(Tdat$PITnum, fromLast = TRUE) 
 AlldupTags <- Tdat[idx, ] 
 
+write.csv(AlldupTags, "C:/Users/HaleyOhms/Documents/Carmel/Data Deliveries/DupTags.csv")
+
 fallpop$PITnum[fallpop$PITnum=="na"] <- NA
 
 fallpop$PITnum[fallpop$PITnum=="900226001046800"] <- NA
