@@ -22,9 +22,12 @@ AFD<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv
 ############################################################################################
 
 #... made a mistake. need to pull added data and re-add it :\
-#CHANGE THIS CODE BEFORE USING - WILL DELETE OTHER DATA
-# AFD <- AFD %>% filter(!Date > "2019-08-30")
+# min(fallpop$Date)
+# max(fallpop$Date)
+# AFD <- AFD %>% filter(!(Date > "2019-09-03" & Date < "2019-10-30"))
 # write_csv(AFD, "C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
+
+
         
 dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/NMFS_Data/TaggingHabitatScouting/2019/POP Surveys 2019/PIT Tagging"
 
@@ -83,108 +86,6 @@ fallpop$Notes[fallpop$Notes=="MORT, E-FISHING SCAR"] <- "Mort"
 #... Clean up tag numbers
 fallpop$PITnum[fallpop$PITnum=="NaN"] <- NA
 fallpop$PITnum[fallpop$PITnum==""] <- NA
-
-## Deal with duplicates
-Tdat <- filter(fallpop, Recap==F, !is.na(PITnum)) #Non-recaps
-dupTags <- Tdat[which(duplicated(Tdat$PITnum)==T) , ]
-idx <- duplicated(Tdat$PITnum) | duplicated(Tdat$PITnum, fromLast = TRUE) 
-AlldupTags <- Tdat[idx, ] 
-
-#write.csv(AlldupTags, "C:/Users/HaleyOhms/Documents/Carmel/Data Deliveries/DupTags.csv")
-
-fallpop$PITnum[fallpop$PITnum=="na"] <- NA
-
-  fallpop$Notes[fallpop$PITnum=="900226001046800"] <- "Tag #900226001046800, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900226001046800"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900226001046839"] <- "Tag #900226001046839, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900226001046839"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633625"] <- "Tag #900228000633625, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633625"] <- NA
-  
-fallpop$Recap[fallpop$PITnum=="900226001046024" & fallpop$SiteID=="Scarlett" ] <- T
-  
-fallpop$Recap[fallpop$PITnum=="900226001046040" & fallpop$SiteID=="Scarlett" ] <- T
-
-fallpop$Recap[fallpop$PITnum=="900226001046716" & fallpop$SiteID=="Scarlett" ] <- T
-
-  fallpop$Notes[fallpop$PITnum=="900228000633208"] <- "Tag #900228000633208, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633208"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633600"] <- "Tag #900228000633600, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633600"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633610"] <- "Tag #900228000633610, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633610"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633634"] <- "Tag #900228000633634, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633634"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633636"] <- "Tag #900228000633636, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633636"] <- NA
-
-  fallpop$Notes[fallpop$PITnum=="900228000633629"] <- "Tag #900228000633629, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633629"] <- NA
-
-  fallpop$Notes[fallpop$PITnum=="900228000633605"] <- "Tag #900228000633605, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633605"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633613"] <- "Tag #900228000633613, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633613"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633622"] <- "Tag #900228000633622, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633622"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633638"] <- "Tag #900228000633638, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633638"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633640"] <- "Tag #900228000633640, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633640"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633650"] <- "Tag #900228000633650, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633650"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633652"] <- "Tag #900228000633652, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633652"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633654"] <- "Tag #900228000633654, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633654"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633658"] <- "Tag #900228000633658, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633658"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633660"] <- "Tag #900228000633660, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633660"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633663"] <- "Tag #900228000633663, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633663"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633670"] <- "Tag #900228000633670, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633670"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633678"] <- "Tag #900228000633678, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633678"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633679"] <- "Tag #900228000633679, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633679"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633684"] <- "Tag #900228000633684, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633684"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900228000633685"] <- "Tag #900228000633685, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000633685"] <- NA
-  
-  fallpop$Recap[fallpop$PITnum=="900228000633696" & fallpop$SiteID=="Stone Cabin" ] <- T
-  
-  fallpop$Notes[fallpop$PITnum=="900228000689180"] <- "Tag #900228000689180, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000689180"] <- NA
-  
-  fallpop$Notes[fallpop$PITnum=="900226001046111"] <- "Tag #900228000689180, duplicate, removed"
-  fallpop$PITnum[fallpop$PITnum=="900228000689180"] <- NA
-  
-  AFD$Notes[AFD$PITnum=="900226001046111" & AFD$SiteID=="121"] <- "Mort, Tag #900226001046111, duplicate, removed"
-  AFD$PITnum[AFD$PITnum=="900226001046111" & AFD$SiteID=="121"] <- NA
   
   #... Tag size errors 
   fallpop$TagSize[fallpop$SiteID=="UP CDFW 2" & fallpop$FishNum=="43"] <- "12"
@@ -209,14 +110,14 @@ AFD <- rbind(AFD, fallpop)
 AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
 
 AFD$PITnum[AFD$PITnum=="na"] <- NA
-
-write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
-
+AFD$PITnum[AFD$PITnum=="N/A"] <- NA
 
 #... change brown trout species
 bts <- AFD[which(AFD$Notes=="BROWN TROUT"),]
 fallpop$TagSize[fallpop$SiteID=="CDFW 3" & fallpop$FishNum=="10" ] <- "12"
 AFD$Species[AFD$Notes=="BROWN TROUT"] <- "St"
+
+write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
 
 
 

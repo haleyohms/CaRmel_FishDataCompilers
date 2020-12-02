@@ -17,7 +17,9 @@ AFD<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv
 ## DONT DO THIS! BUT NEED TO CHECK FOR TAGS WITH SPACES!!
 #AFD$PITnum2 = as.character(sub(" ", "", AFD[,"PITnum"])) # Remove space from PITnum
 
+#AFD <- AFD[!(is.na(AFD$Date)) , ] #remove empty junk from excel
 
+head(AFD)
 
 ############################################################################################
 ############################################################################################
@@ -128,12 +130,139 @@ write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv
 #write_csv(rstdf,"C:/Users/HaleyOhms/Documents/Carmel/Data Deliveries/2019RST.csv")
 
 
+############################################################################################
+############################################################################################
+## Compile 2020 MPWMD Sleepy Rearing Rescues
+############################################################################################
+############################################################################################
 
+#########################
+## CORY"S DATA ##
+#########################
 
+#rm(list=ls())
+require(dplyr)
+require(tidyverse)
+require(lubridate)
+require(xlsx)
+# require(ggplot2)
 
+dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FishRescues/2020 Rescues/Sleepy Reared Rescues/"
 
+files = list.files(dir, '*.txt', recursive = F, full.names = TRUE) 
+bnames = basename(files)
+bnames = sub('.txt', '',bnames)
+
+for(i in 1:length(files)){
+  tbl<-read.table(files[i], header=FALSE, sep="|")
   
+  pieces = unlist(strsplit(bnames[i], '_'))
+  tbl$site = pieces[1]
+  tbl$date = pieces[2]
   
+  if(i == 1){
+    dfr = tbl
+  } else{
+    dfr = rbind(dfr, tbl)
+  }
+}
+
+colnames(dfr)<-c("FishNum","FL_mm", "Wt_g","PITnum","Recap","TagSize","DNAsamp","Notes","Date","Time","SiteID","Date2")
+head(dfr)
+
+#Clean up formatting
+dfr$FishNum<-substring(dfr$FishNum, 2)
+dfr$FishNum<-as.numeric(dfr$FishNum)
+dfr$Time<-NULL
+dfr$Date2<-as.character(dfr$Date2)
+dfr$Date<-as.Date(dfr$Date2, "%y%m%d" )
+dfr$Date2<-NULL
+unique(dfr$Notes)
+
+dfr$Recap <- dfr$Recap=="Yes"
+
+
+#Tags to 15 digits
+dfr$pre<-substr(dfr$PITnum, start=1, stop=2)
+dfr$PITnum<-ifelse(dfr$pre=="R0",substring(dfr$PITnum, 7),substring(dfr$PITnum, 9)) 
+dfr$pre<-NULL 
+
+dfr$DNAsamp <- dfr$DNAsamp=="Yes"
+
+
+#Add columns to match fish data
+dfr$Pass<-NA
+dfr$Scales<-FALSE
+dfr$SiteTo<-"TBD"
+#dfr$SiteGRTS<-"TBD"
+
+#Notes = SiteID in this case
+dfr$SiteID <- dfr$Notes
+dfr$Notes <- NA
+
+dfr$Species <- "Om"
+dfr$Sex <- NA
+
+
+#########################
+## UCSC CREW DATA ##
+#########################
+#dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FishRescues/2020 Rescues/Sleepy Reared Rescues/"
+
+files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
+bnames = basename(files)
+bnames = sub('.xlsx', '',bnames)
+
+
+for(i in 1:length(files)){
+  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
+                   colClasses = c("character","Date", "numeric", "numeric", "numeric", "numeric",
+                                  "character","numeric", "character", "character", "character", "character","character"),
+                   stringsAsFactors=FALSE)
+  tbl <- tbl[!(is.na(tbl$Date)) , ] #remove empty junk from excel
+  
+  if(i == 1){
+    rstdf = tbl
+  } else{
+    rstdf = rbind(rstdf, tbl)
+  }
+}
+
+colnames(rstdf) <- c("SiteID", "Date", "FishNum", "Pass", "FL_mm", "Wt_g", "PITnum", "TagSize", 
+                     "DNAsamp", "Scales", "Recap", "Species", "Notes")
+
+rstdf$DNAsamp <- rstdf$DNAsamp=="Y" | rstdf$DNAsamp=="T"
+rstdf$Scales <- rstdf$Scales=="Y" | rstdf$Scales=="T"
+rstdf$Recap <- rstdf$Recap=="Y" | rstdf$Recap=="T"
+rstdf$Sex<-NA
+rstdf$Pass<-NA
+rstdf$SiteTo<-"TBD"
+# unique(rstdf$Notes)
+#  unique(rstdf$Species)
+rstdf$Species[rstdf$Species=="Omy"] <- "Om"
+rstdf$Species[rstdf$Species=="OMY"] <- "Om"
+rstdf$TagSize <- as.integer(rstdf$TagSize)
+
+rstdf$PITnum = as.character(sub(" ", "", rstdf[,"PITnum"])) # Remove space from PITnum
+
+#... combine Cory's and NOAA data
+SHDat <- rbind(rstdf, dfr)
+  SHDat$SiteID = as.character(sub("_", "", SHDat[,"SiteID"])) # Standardize SiteIDs
+  SHDat$SiteID = as.character(sub("C0", "C", SHDat[,"SiteID"])) 
+  SHDat$SiteID = as.character(sub(" ", "", SHDat[,"SiteID"])) 
+
+  SHDat$PITnum[SHDat$PITnum==""] <- NA
+  
+#... combine the dfr and AFD data    
+AFD <- rbind(AFD, SHDat)
+  AFD <- distinct(AFD, Date, Species, FishNum, FL_mm, Wt_g, PITnum, Recap, .keep_all=T)
+
+  write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
+
+
+# Data export for Cory: 
+write_csv(SHDat,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/SHRF_TaggingData_2020.csv")
+
   
   
 
