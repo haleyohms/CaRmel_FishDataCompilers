@@ -78,7 +78,7 @@ write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv
 ############################################################################################
 ############################################################################################
 
-dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/NMFS_Data/Rotary Screw Trap/2020 RST Tagging/RST Data/"
+dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/NMFS_Data/Rotary Screw Trap/2020 RST Tagging/"
 
 files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
 bnames = basename(files)
@@ -264,9 +264,101 @@ AFD <- rbind(AFD, SHDat)
 write_csv(SHDat,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/SHRF_TaggingData_2020.csv")
 
   
-  
+############################################################################################
+############################################################################################
+## Compile 2020 Pop Survey Data
+############################################################################################
+############################################################################################
 
-   
+
+dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/NMFS_Data/TaggingHabitatScouting/2020/2020 POP Surveys/PIT Tagging"
+
+files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
+bnames = basename(files)
+bnames = sub('.xlsx', '',bnames)
+
+for(i in 1:length(files)){
+  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
+                   colClasses = c("character","Date", "numeric", "numeric", "numeric", "numeric",
+                                  "character","numeric", "character", "character", "character", "character", "character"),
+                   stringsAsFactors=FALSE)
+  #remove empty junk from excel
+  tbl <- tbl[,1:13]
+  tbl <- tbl[!(is.na(tbl$Date)) , ] 
+  
+  if(i == 1){
+    fallpop = tbl
+  } else{
+    fallpop = rbind(fallpop, tbl)
+  }
+}
+
+colnames(fallpop) <- c("SiteID", "Date", "FishNum", "Pass", "FL_mm", "Wt_g", "PITnum", "TagSize",  
+                       "DNAsamp", "Scales", "Recap", "Species", "Notes")
+
+fallpop$DNAsamp <- fallpop$DNAsamp=="Y" | fallpop$DNAsamp=="T"
+fallpop$Scales <- fallpop$Scales=="Y" | fallpop$Scales=="T"
+fallpop$Recap <- fallpop$Recap=="Y" | fallpop$Recap=="T"
+fallpop$Sex<-NA
+fallpop$SiteTo<-NA
+fallpop$TagSize <- as.integer(fallpop$TagSize)
+fallpop$PITnum = as.character(sub(" ", "", fallpop[,"PITnum"])) # Remove space from PITnum
+
+unique(fallpop$Notes)
+
+
+#... Clean up morts
+fallpop$Notes[fallpop$Notes=="RECAP"] <- "" 
+fallpop$Notes[fallpop$Notes=="MORT"] <- "Mort"
+fallpop$Notes[fallpop$Notes==" NO WEIGHT"] <- "" 
+fallpop$Notes[fallpop$Notes=="EFISHING MORT"] <- "Mort"
+fallpop$Notes[fallpop$Notes=="EUTHANIZED "] <- "Mort"
+
+fallpop[fallpop$Notes=="RECAP GARLAND",]
+
+#... Clean up tag numbers
+fallpop$PITnum[fallpop$PITnum==""] <- NA
+fallpop$PITnum[fallpop$PITnum=="NA"] <- NA
+
+#... Clean up species names
+fallpop$Species[fallpop$Species=="STR"] <- "St"
+fallpop$Species[fallpop$Species=="Str"] <- "St"
+fallpop$Species[fallpop$Species=="Omy"] <- "Om"
+
+
+#... Duplicate tags
+dupDat <- filter(fallpop, Recap==F, !is.na(PITnum)) #Non-recaps
+dupTags <- dupDat[which(duplicated(dupDat$PITnum)==T) , ]
+idx <- duplicated(dupDat$PITnum) | duplicated(dupDat$PITnum, fromLast = TRUE) 
+AlldupTags <- dupDat[idx, ] 
+
+fallpop$Notes[which(fallpop$PITnum=="900228000688712")] <- "Tag #900228000688712, duplicate, removed"
+fallpop$PITnum[fallpop$PITnum=="900228000688712"] <- NA
+
+
+
+
+#... combine the rst and AFD data    
+AFD <- rbind(AFD, fallpop)
+AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
+
+
+write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
+
+# #... Fall pop data for DB
+# #save(fallpop, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/2020fallPop_forDB.Rda")
+# load("C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/2020fallPop_forDB.Rda")
+# 
+# #... Permit reporting for Dave Rundio
+# 
+# unique(fallpop$SiteID)
+# 
+# NOAAsites <- c("166", "239", "345", "121", "122", "70", "84", "92")
+# 
+# fallpop2 <- fallpop %>% filter(SiteID %in% NOAAsites) %>% 
+#   filter(!is.na(PITnum) | DNAsamp==T | Scales ==T)
+
+
   
     
   
