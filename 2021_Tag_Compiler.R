@@ -14,6 +14,116 @@ AFD<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv
                                TagSize = "i", DNAsamp = col_logical(), Notes = "c", SiteTo = "c",
                                Scales = "l", Species = "c", Sex = "c"))
 
+
+# Compare 2013-2017 with data I compiled in 2017 - does it match?
+oldDat<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/pre2018FishData.csv", col_names=T, 
+                 col_types = cols(SiteID = "c", MPWMD_Name = "c", Stream = "c", Date = col_date(format = ""),
+                                  Pass = col_double(), FishNum = "d", FL_mm = col_double(), Wt_g = col_double(), PITnum = "c",
+                                  Recap = col_logical(), TagSize = "c", DNAsamp = col_logical(), Notes = "c", SiteTo = "c"))
+#... clean up old to match new data format
+unique(oldDat$TagSize)
+oldDat$TagSize[oldDat$TagSize=="NA"]   <- NA
+oldDat$TagSize[oldDat$TagSize=="23mm"] <- "23"
+oldDat$TagSize[oldDat$TagSize=="12mm"]  <- "12"
+
+oldDat$MPWMD_Name[oldDat$SiteID=="DrybackZone"]  <- "DrybackZone"
+oldDat$MPWMD_Name[oldDat$SiteID=="SmoltTrap"]  <- "SmoltTrap"
+oldDat$MPWMD_Name[oldDat$SiteID=="SWFSC-Tank"]  <- "SWFSCtank"
+oldDat$MPWMD_Name[oldDat$SiteID=="NMFS Lab"]  <- "NMFSlab"
+
+
+
+oldDat$SiteID<-oldDat$MPWMD_Name
+
+# To match changes I made in 2019
+  oldDat$SiteID[oldDat$SiteID=="CDFW Wild Trout 1"] <- "CDFW1"
+  oldDat$SiteID[oldDat$SiteID=="CDFW Wild Trout 2"] <- "CDFW2"
+  oldDat$SiteID[oldDat$SiteID=="SmoltTrap"] <- "2014RescueSmoltTrap"
+  oldDat$SiteID[oldDat$SiteID=="Sleepy Hollow"] <- "Sleepyhollow"
+
+oldDat$Species<-"Om"
+oldDat$Scales<-NA
+oldDat$Sex <- NA
+
+drops <- c("MPWMD_Name", "Stream")
+oldDat<- oldDat[ , !(names(oldDat) %in% drops)]
+
+compOld <- as.data.frame(oldDat %>% filter(year(Date) > 2012, year(Date) < 2018))
+  compAFD <- as.data.frame(AFD %>% filter(year(Date) > 2012, year(Date) < 2018))
+  
+  compOld$TagSize <- as.integer(compOld$TagSize)
+  compOld$Sex <- as.character(compOld$Sex)
+  
+  # unique(compOld$SiteID)
+  # p <- compOld[which(is.na(compOld$SiteID)),]
+  # 
+  # compOld[which(is.na(compOld$SiteID)),]
+  
+  head(p)
+  
+  min(compOld$Date)
+  min(compAFD$Date)
+  
+  t <- anti_join(compOld, compAFD)
+  t2 <- anti_join(compAFD, compOld)
+  
+
+  str(compAFD)
+  
+head(t)
+unique(t$SiteID)
+max(t$Date)
+
+tSum <- t %>% group_by(Date, SiteID) %>% summarise(n())
+
+z = compOld[which(compOld$Date=="2013-09-17"),]
+  z1= compAFD[which(compAFD$Date=="2013-09-17"),]
+  
+  z = compOld[which(compOld$Date=="2013-10-24"),]
+  z1= compAFD[which(compAFD$Date=="2013-10-24"),]
+  
+  anti_join(z, z1)
+  
+  
+  ## Cory's Master Data
+  coryDat<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/Juvenile Steelhead_Date_Location_Length_Weight_Tag.csv", 
+                    col_names=T)
+  
+  , 
+                    col_types = cols(Date = col_date(format = ""), Method = "c", Location = "c", Species = "c",
+                                     `Length (mm)` = col_double(), `Weight (g)` = col_double(), `Recap (Y/N)` = col_logical(),
+                                     `PIT Prefix` = "c", `PIT Last 6 Digits` = "c", Notes="c", `Notes 2`="c"))
+                                   
+      
+  head(coryDat)  
+  unique(coryDat$Location)
+                    
+                    
+  fallpop <- c("Pop Survey", "CDFW Pop Survey")
+  corySum <- coryDat %>% filter(Method %in% fallpop) %>% 
+    group_by(Location, Date) %>% 
+    summarise(n())
+  write_csv(corySum, "C:/Users/HaleyOhms/Documents/Carmel/DATA/CoryMain.csv")
+
+  origSum <- oldDat %>% filter(year(Date) < 2018) %>% 
+    group_by(SiteID, Date) %>% 
+    summarise(n())
+  write_csv(origSum, "C:/Users/HaleyOhms/Documents/Carmel/DATA/OrigCompile.csv")
+
+  AFDSum <- AFD %>% filter(year(Date) < 2018) %>%
+    group_by(SiteID, Date) %>% 
+    summarise(n())
+  write_csv(AFDSum, "C:/Users/HaleyOhms/Documents/Carmel/DATA/AFDCompile.csv")
+  
+############################################################################
+############################################################################
+############################################################################
+############################################################################
+############################################################################
+############################################################################
+
+## CODE FROM 2020: 
+
 ## DONT DO THIS! BUT NEED TO CHECK FOR TAGS WITH SPACES!!
 #AFD$PITnum2 = as.character(sub(" ", "", AFD[,"PITnum"])) # Remove space from PITnum
 

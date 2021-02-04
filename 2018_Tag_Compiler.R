@@ -370,7 +370,7 @@ dfall<-rbind(df,dfr,dfo,dfnr,dfyoy)
   dfall$Species<-"Om"
   
 #... read in pre-2018 data  
-  oldDat<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/Database/pre2018FishData.csv", col_names=T, 
+  oldDat<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/pre2018FishData.csv", col_names=T, 
            col_types = cols(SiteID = "c", MPWMD_Name = "c", Stream = "c", Date = col_date(format = ""),
            Pass = col_double(), FishNum = "d", FL_mm = col_double(), Wt_g = col_double(), PITnum = "c",
            Recap = col_logical(), TagSize = "c", DNAsamp = col_logical(), Notes = "c", SiteTo = "c"))
