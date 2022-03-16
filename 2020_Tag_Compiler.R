@@ -270,7 +270,7 @@ write_csv(SHDat,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/SHRF_T
 ############################################################################################
 ############################################################################################
 
-#rm(list=ls())
+rm(list=ls())
 require(dplyr)
 require(tidyverse)
 require(lubridate)
@@ -335,6 +335,7 @@ AFD <- distinct(AFD, Date, Species, FishNum, FL_mm, Wt_g, PITnum, Recap, .keep_a
 
 write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
 
+#save(dfr, file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/Rescue_Release_2021.Rda")
   
 ############################################################################################
 ############################################################################################
@@ -451,4 +452,8 @@ AFD$SiteTo[which(AFD$Date=="2020-11-12" & AFD$FL_mm < 160)] <- "Meadows Rd"
   
 write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
   
+
+
+
+
   

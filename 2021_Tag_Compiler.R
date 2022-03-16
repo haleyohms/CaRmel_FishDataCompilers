@@ -1,564 +1,435 @@
+############################################################################################
+############################################################################################
+## Compile 2021 Pop Survey Data
+############################################################################################
+############################################################################################
+
+
 rm(list=ls())
-
 require(dplyr)
 require(tidyverse)
 require(lubridate)
 require(xlsx)
-require(ggplot2)
 
 
-# Main fish data file
-AFD<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv", col_names = T,
-              col_types = cols(SiteID = "c", Date = col_date(), Pass = "d", FishNum = "d",
-                               FL_mm = "d", Wt_g = "d", PITnum = "c", Recap = col_logical(),
-                               TagSize = "i", DNAsamp = col_logical(), Notes = "c", SiteTo = "c",
-                               Scales = "l", Species = "c", Sex = "c"))
+#########################
+## Hand-held reader data ##
+#########################
 
+### First three sites, each is unique
+#... Scarlett: used hand-held for PIT numbers, excel for fish too small to tag. Excel fish numbers are wrong (I deleted them)
+#.... but the text fish numbers are correct
 
-# Compare 2013-2017 with data I compiled in 2017 - does it match?
-oldDat<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/pre2018FishData.csv", col_names=T, 
-                 col_types = cols(SiteID = "c", MPWMD_Name = "c", Stream = "c", Date = col_date(format = ""),
-                                  Pass = col_double(), FishNum = "d", FL_mm = col_double(), Wt_g = col_double(), PITnum = "c",
-                                  Recap = col_logical(), TagSize = "c", DNAsamp = col_logical(), Notes = "c", SiteTo = "c"))
-#... clean up old to match new data format
-unique(oldDat$TagSize)
-oldDat$TagSize[oldDat$TagSize=="NA"]   <- NA
-oldDat$TagSize[oldDat$TagSize=="23mm"] <- "23"
-oldDat$TagSize[oldDat$TagSize=="12mm"]  <- "12"
+#... Boronda: used the computer for all fish until the computer died, then switched to hand-held for all (even non-tagged fish)
+#.... recorded non-tagged fish with a duplicate tag (which needs to be deleted from the data)
+#.... Excel fish numbers are correct, text fish numbers are wrong
 
-oldDat$MPWMD_Name[oldDat$SiteID=="DrybackZone"]  <- "DrybackZone"
-oldDat$MPWMD_Name[oldDat$SiteID=="SmoltTrap"]  <- "SmoltTrap"
-oldDat$MPWMD_Name[oldDat$SiteID=="SWFSC-Tank"]  <- "SWFSCtank"
-oldDat$MPWMD_Name[oldDat$SiteID=="NMFS Lab"]  <- "NMFSlab"
+#... Garland: used hand-held reader only; fish numbers in text file are correct
+
+#... Need to save all a single file for each site for CH
 
 
 
-oldDat$SiteID<-oldDat$MPWMD_Name
+###############
+## Scarlett
+###############
 
-# To match changes I made in 2019
-  oldDat$SiteID[oldDat$SiteID=="CDFW Wild Trout 1"] <- "CDFW1"
-  oldDat$SiteID[oldDat$SiteID=="CDFW Wild Trout 2"] <- "CDFW2"
-  oldDat$SiteID[oldDat$SiteID=="SmoltTrap"] <- "2014RescueSmoltTrap"
-  oldDat$SiteID[oldDat$SiteID=="Sleepy Hollow"] <- "Sleepyhollow"
+file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/Scarlett_101521.txt"
+  tblScar<-read.table(file, header=FALSE, sep="|")
 
-oldDat$Species<-"Om"
-oldDat$Scales<-NA
-oldDat$Sex <- NA
+  colnames(tblScar)<-c("FishNumber","FL_mm", "Wt_g","PITnumber","Recapture","TagSize","DNAsample","FieldNotes","Date","Time")
 
-drops <- c("MPWMD_Name", "Stream")
-oldDat<- oldDat[ , !(names(oldDat) %in% drops)]
+  tblScar$SiteName = "Scarlett"
+ 
 
-compOld <- as.data.frame(oldDat %>% filter(year(Date) > 2012, year(Date) < 2018))
-  compAFD <- as.data.frame(AFD %>% filter(year(Date) > 2012, year(Date) < 2018))
+head(tblScar)
+
+#Clean up formatting
+tblScar$FishNumber<-substring(tblScar$FishNumber, 2)
+  tblScar$FishNumber<-as.numeric(tblScar$FishNumber)
+  tblScar$Time<-NULL
+  tblScar$Date<-dmy(tblScar$Date)
+  tblScar$Recapture <- tblScar$Recapture=="Yes"
+  tblScar$DNAsample <- tblScar$DNAsample=="Yes"
+
+#Tags to 15 digits
+  tblScar$pre<-substr(tblScar$PITnumber, start=1, stop=2)
+  tblScar$PITnumber<-ifelse(tblScar$pre=="R0",substring(tblScar$PITnumber, 7),substring(tblScar$PITnumber, 9)) 
+  tblScar$pre<-NULL 
+
+#Add columns to match fish data
+  tblScar$Pass<-NA
+  tblScar$Species <- "O. mykiss"
+  tblScar$ScaleSample <- NA
+
+
+### Read in the excel file:
+  file2 = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/Scarlett_CarmelTagging_2021.xlsx"
+  tbl2Scar = read.xlsx2(file2, sheetIndex = 1, startRow = 1, 
+             colClasses = c("character","Date", "numeric", "numeric", "numeric", 
+                            "numeric","character","numeric", "character",
+                             "character", "character", "character","character"),
+             stringsAsFactors=FALSE)
+  tbl2Scar <- tbl2Scar[!(is.na(tbl2Scar$Date)) , ] #remove empty junk from excel
   
-  compOld$TagSize <- as.integer(compOld$TagSize)
-  compOld$Sex <- as.character(compOld$Sex)
+  tbl2Scar$PITnumber<-NA
   
-  # unique(compOld$SiteID)
-  # p <- compOld[which(is.na(compOld$SiteID)),]
-  # 
-  # compOld[which(is.na(compOld$SiteID)),]
-  
-  head(p)
-  
-  min(compOld$Date)
-  min(compAFD$Date)
-  
-  t <- anti_join(compOld, compAFD)
-  t2 <- anti_join(compAFD, compOld)
+  tbl2Scar$Recapture <- tbl2Scar$Recapture=="Yes"
+  tbl2Scar$DNAsample <- tbl2Scar$DNAsample=="Yes"
+
+  #Add columns to match fish data
+  tbl2Scar$Pass<-NA
+  tbl2Scar$Species <- "O. mykiss"
+    sort(names(tblScar))
+
+#... Join them up:
+  ScarDat <- rbind(tblScar, tbl2Scar)
+
+#... Write out for CH:
+  write.xlsx2(ScarDat, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Scarlett.xlsx")
   
 
-  str(compAFD)
+  ###############
+  ## Boronda
+  ###############
   
-head(t)
-unique(t$SiteID)
-max(t$Date)
+  file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/Boronda_101821.txt"
+  tblBor<-read.table(file, header=FALSE, sep="|")
+  
+  colnames(tblBor)<-c("FishNumber","FL_mm", "Wt_g","PITnumber","Recapture","TagSize","DNAsample","FieldNotes","Date","Time")
+  
+  tblBor$SiteName = "Boronda"
+  
+  
+  head(tblBor)
+  
+  #Clean up formatting
+  tblBor$FishNumber<-substring(tblBor$FishNumber, 2)
+  tblBor$FishNumber<-as.numeric(tblBor$FishNumber)
+    tblBor$FishNumber <- NA ## Fish numbers incorrect
+  tblBor$Time<-NULL
+  tblBor$Date<-dmy(tblBor$Date)
+  tblBor$Recapture <- tblBor$Recapture=="Yes"
+  tblBor$DNAsample <- tblBor$DNAsample=="Yes"
+  
+  #Tags to 15 digits
+  tblBor$pre<-substr(tblBor$PITnumber, start=1, stop=2)
+  tblBor$PITnumber<-ifelse(tblBor$pre=="R0",substring(tblBor$PITnumber, 7),substring(tblBor$PITnumber, 9)) 
+  tblBor$pre<-NULL 
+  
+  #Add columns to match fish data
+  tblBor$Pass<-NA
+  tblBor$Species <- "O. mykiss"
+  tblBor$ScaleSample <- F
+  
+  
+  ### Read in the excel file:
+  file2 = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/Boronda_CarmelTagging_2021.xlsx"
+  tbl2Bor = read.xlsx2(file2, sheetIndex = 1, startRow = 1, 
+                        colClasses = c("character","Date", "numeric", "numeric", "numeric", 
+                                       "numeric","character","numeric", "character",
+                                       "character", "character", "character","character"),
+                        stringsAsFactors=FALSE)
+  tbl2Bor <- tbl2Bor[!(is.na(tbl2Bor$Date)) , ] #remove empty junk from excel
+  
+  tbl2Bor$Recapture <- tbl2Bor$Recapture=="Yes"
+  tbl2Bor$DNAsample <- tbl2Bor$DNAsample=="Yes"
+  
+  tbl2Bor$PITnumber = as.character(sub(" ", "", tbl2Bor[,"PITnumber"])) # Remove space from PITnum
+  
+  #Add columns to match fish data
+  tbl2Bor$Species <- "O. mykiss"
+  sort(names(tbl2Bor))
+  
+  #... Join them up:
+  BorDat <- rbind(tblBor, tbl2Bor)
+  
+  BorDat <- BorDat %>% mutate(PITnumber = ifelse(PITnumber=="982126054206704", NA, PITnumber), 
+                              TagSize = ifelse(is.na(PITnumber), NA, TagSize))
+    
+  
+  #... Write out for CH:
+  write.xlsx2(BorDat, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Boronda.xlsx")
+  
+  
+  ###############
+  ## Garland
+  ###############
+  
+  file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/Garland_101921.txt"
+  tblGar<-read.table(file, header=FALSE, sep="|")
+  
+  colnames(tblGar)<-c("FishNumber","FL_mm", "Wt_g","PITnumber","Recapture","TagSize","DNAsample","FieldNotes","Date","Time")
+  
+  tblGar$SiteName = "Garland"
+  
+  #Clean up formatting
+  tblGar$FishNumber<-substring(tblGar$FishNumber, 2)
+  tblGar$FishNumber<-as.numeric(tblGar$FishNumber)
+    tblGar$Time<-NULL
+  tblGar$Date<-dmy(tblGar$Date)
+  tblGar$Recapture <- tblGar$Recapture=="Yes"
+  tblGar$DNAsample <- tblGar$DNAsample=="Yes"
+  
+  #Tags to 15 digits
+  tblGar$pre<-substr(tblGar$PITnumber, start=1, stop=2)
+  tblGar$PITnumber<-ifelse(tblGar$pre=="R0",substring(tblGar$PITnumber, 7),substring(tblGar$PITnumber, 9)) 
+  tblGar$pre<-NULL 
+  
+  #Add columns to match fish data
+  tblGar$Pass<-NA
+  tblGar$Species <- "O. mykiss"
+  tblGar$ScaleSample <- F
+  
+  tblGar <- tblGar %>% mutate(PITnumber = ifelse(PITnumber=="982126054206704", NA, PITnumber), 
+                              TagSize = ifelse(is.na(PITnumber), NA, TagSize))
+  
+   #... Write out for CH:
+  write.xlsx2(tblGar, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Garland.xlsx")
+  
+  
+  #################################
+  ## Sleepy Hollow ###
+  #################################
+  
+  file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/SleepyHollow_10_22_21.txt"
+  tblSH<-read.table(file, header=FALSE, sep="|")
+  
+  colnames(tblSH)<-c("FishNumber","FL_mm", "Wt_g","PITnumber","Recapture","TagSize","DNAsample","FieldNotes","Date","Time")
+  
+  tblSH$SiteName = "SleepyHollow"
+  
+   
+  head(tblSH)
+  
+  #Clean up formatting
+  tblSH$FishNumber<-substring(tblSH$FishNumber, 2)
+  tblSH$FishNumber<-as.numeric(tblSH$FishNumber)
+  tblSH$Time<-NULL
+  tblSH$Date<-dmy(tblSH$Date)
+  tblSH$Recapture <- tblSH$Recapture=="Yes"
+  tblSH$DNAsample <- tblSH$DNAsample=="Yes"
+  
+  #Tags to 15 digits
+  tblSH$pre<-substr(tblSH$PITnumber, start=1, stop=2)
+  tblSH$PITnumber<-ifelse(tblSH$pre=="R0",substring(tblSH$PITnumber, 7),substring(tblSH$PITnumber, 9)) 
+  tblSH$pre<-NULL 
+  
+  tblSH <- tblSH %>% mutate(PITnumber = ifelse(PITnumber=="982126054206704", NA, PITnumber), 
+                            TagSize = ifelse(is.na(PITnumber), NA, TagSize))
+  
+  
+  #Add columns to match fish data
+  tblSH$Pass<-NA
+  tblSH$Species <- "O. mykiss"
+  tblSH$ScaleSample <- NA
+  
+  write.xlsx2(tblSH, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/SleepyHollow.xlsx")
+  
 
-tSum <- t %>% group_by(Date, SiteID) %>% summarise(n())
-
-z = compOld[which(compOld$Date=="2013-09-17"),]
-  z1= compAFD[which(compAFD$Date=="2013-09-17"),]
+  #################################
+  ## Stonepine ###
+  #################################
   
-  z = compOld[which(compOld$Date=="2013-10-24"),]
-  z1= compAFD[which(compAFD$Date=="2013-10-24"),]
+  file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/Stonepine_10_21_21.txt"
+  tblSP<-read.table(file, header=FALSE, sep="|")
   
-  anti_join(z, z1)
+  colnames(tblSP)<-c("FishNumber","FL_mm", "Wt_g","PITnumber","Recapture","TagSize","DNAsample","FieldNotes","Date","Time")
+  
+  tblSP$SiteName = "Stonepine"
+  
+  head(tblSP)
+  
+  #Clean up formatting
+  tblSP$FishNumber<-substring(tblSP$FishNumber, 2)
+  tblSP$FishNumber<-as.numeric(tblSP$FishNumber)
+  tblSP$Time<-NULL
+  tblSP$Date<-dmy(tblSP$Date)
+  tblSP$Recapture <- tblSP$Recapture=="Yes"
+  tblSP$DNAsample <- tblSP$DNAsample=="Yes"
+  
+  #Tags to 15 digits
+  tblSP$pre<-substr(tblSP$PITnumber, start=1, stop=2)
+  tblSP$PITnumber<-ifelse(tblSP$pre=="R0",substring(tblSP$PITnumber, 7),substring(tblSP$PITnumber, 9)) 
+  tblSP$pre<-NULL 
+  
+  tblSP <- tblSP %>% mutate(PITnumber = ifelse(PITnumber=="982126054206704", NA, PITnumber), 
+                            TagSize = ifelse(is.na(PITnumber), NA, TagSize))
+  
+  #Add columns to match fiSP data
+  tblSP$Pass<-NA
+  tblSP$Species <- "O. mykiss"
+  tblSP$ScaleSample <- NA
+  
+  write.xlsx2(tblSP, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Stonepine.xlsx")
   
   
-  ## Cory's Master Data
-  coryDat<-read_csv("C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/Juvenile Steelhead_Date_Location_Length_Weight_Tag.csv", 
-                    col_names=T)
   
-  , 
-                    col_types = cols(Date = col_date(format = ""), Method = "c", Location = "c", Species = "c",
-                                     `Length (mm)` = col_double(), `Weight (g)` = col_double(), `Recap (Y/N)` = col_logical(),
-                                     `PIT Prefix` = "c", `PIT Last 6 Digits` = "c", Notes="c", `Notes 2`="c"))
-                                   
+  #################################
+  ## UIZ ###
+  #################################
+  
+  file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/UIZ_11_03_21.txt"
+  tblUIZ<-read.table(file, header=FALSE, sep="|")
+  
+  colnames(tblUIZ)<-c("FishNumber","FL_mm", "Wt_g","PITnumber","Recapture","TagSize","DNAsample","FieldNotes","Date","Time")
+  
+  tblUIZ$SiteName = "UIZ"
+  
+  head(tblUIZ)
+  
+  #Clean up formatting
+  tblUIZ$FishNumber<-substring(tblUIZ$FishNumber, 2)
+  tblUIZ$FishNumber<-as.numeric(tblUIZ$FishNumber)
+  tblUIZ$Time<-NULL
+  tblUIZ$Date<-dmy(tblUIZ$Date)
+  tblUIZ$Recapture <- tblUIZ$Recapture=="Yes"
+  tblUIZ$DNAsample <- tblUIZ$DNAsample=="Yes"
+  
+  #Tags to 15 digits
+  tblUIZ$pre<-substr(tblUIZ$PITnumber, start=1, stop=2)
+  tblUIZ$PITnumber<-ifelse(tblUIZ$pre=="R0",substring(tblUIZ$PITnumber, 7),substring(tblUIZ$PITnumber, 9)) 
+  tblUIZ$pre<-NULL 
+  
+  tblUIZ <- tblUIZ %>% mutate(PITnumber = ifelse(PITnumber=="982126054206704", NA, PITnumber), 
+                            TagSize = ifelse(is.na(PITnumber), NA, TagSize))
+  
+  #Add columns to match fiUIZ data
+  tblUIZ$Pass<-NA
+  tblUIZ$Species <- "O. mykiss"
+  tblUIZ$ScaleSample <- NA
+  
+  write.xlsx2(tblUIZ, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/UIZ.xlsx")
+  
+  
+  #################################
+  ## Cachagua ###
+  #################################
+  
+  file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/cachagua_10_27_21.txt"
+  tblCach<-read.table(file, header=FALSE, sep="|")
+  
+  colnames(tblCach)<-c("FishNumber","FL_mm", "Wt_g","PITnumber","Recapture","TagSize","DNAsample","FieldNotes","Date","Time")
+  
+  tblCach$SiteName = "Cachagua"
+  
+  head(tblCach)
+  
+  #Clean up formatting
+  tblCach$FishNumber<-substring(tblCach$FishNumber, 2)
+  tblCach$FishNumber<-as.numeric(tblCach$FishNumber)
+  tblCach$Time<-NULL
+  tblCach$Date<-dmy(tblCach$Date)
+  tblCach$Recapture <- tblCach$Recapture=="Yes"
+  tblCach$DNAsample <- tblCach$DNAsample=="Yes"
+  
+  #Tags to 15 digits
+  tblCach$pre<-substr(tblCach$PITnumber, start=1, stop=2)
+  tblCach$PITnumber<-ifelse(tblCach$pre=="R0",substring(tblCach$PITnumber, 7),substring(tblCach$PITnumber, 9)) 
+  tblCach$pre<-NULL 
+  
+  tblCach <- tblCach %>% mutate(PITnumber = ifelse(PITnumber=="982126054206704", NA, PITnumber), 
+                              TagSize = ifelse(is.na(PITnumber), NA, TagSize))
+  
+  #Add columns to match fiCach data
+  tblCach$Pass<-NA
+  tblCach$Species <- "O. mykiss"
+  tblCach$ScaleSample <- NA
+  
+  write.xlsx2(tblCach, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Cachagua.xlsx")
+  
+  
+  #################################
+  ## Los Compadres ###
+  #################################
+  
+  file = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/Raw Data/loscompadres_10_29_21.txt"
+  tblLC<-read.table(file, header=FALSE, sep="|")
+  
+  colnames(tblLC)<-c("FishNumber","FL_mm", "Wt_g","PITnumber","Recapture","TagSize","DNAsample","FieldNotes","Date","Time")
+  
+  tblLC$SiteName = "Los Compadres"
+  
+  head(tblLC)
+  
+  #Clean up formatting
+  tblLC$FishNumber<-substring(tblLC$FishNumber, 2)
+  tblLC$FishNumber<-as.numeric(tblLC$FishNumber)
+  tblLC$Time<-NULL
+  tblLC$Date<-dmy(tblLC$Date)
+  tblLC$Recapture <- tblLC$Recapture=="Yes"
+  tblLC$DNAsample <- tblLC$DNAsample=="Yes"
+  
+  #Tags to 15 digits
+  tblLC$pre<-substr(tblLC$PITnumber, start=1, stop=2)
+  tblLC$PITnumber<-ifelse(tblLC$pre=="R0",substring(tblLC$PITnumber, 7),substring(tblLC$PITnumber, 9)) 
+  tblLC$pre<-NULL 
+  
+  tblLC <- tblLC %>% mutate(PITnumber = ifelse(PITnumber=="982126054206704", NA, PITnumber), 
+                                TagSize = ifelse(is.na(PITnumber), NA, TagSize))
+  
+  #Add columns to match fiLC data
+  tblLC$Pass<-NA
+  tblLC$Species <- "O. mykiss"
+  tblLC$ScaleSample <- NA
+  
+  write.xlsx2(tblLC, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FallPopSurvey/2021/LosCompadres.xlsx")
+  
+  
+  
+################################################################
+#... Add the rest of the database data: 
+################################################################
+  ## Database
+  load(file="C:/Users/HaleyOhms/Documents/GitHub/Carmel_Database/carmel_river_mykiss.RData")
+  
+  PSdat <- rbind(ScarDat, BorDat, tblGar, tblSH, tblSP, tblUIZ, tblCach, tblLC)
+  
+  #t <- FishData %>% group_by(SiteID, SiteName) %>% summarise(n())
+  
+  PSdat <- PSdat %>% mutate(SiteID = ifelse(SiteName=="Scarlett", 52, 
+                              ifelse(SiteName=="Boronda", 80, 
+                               ifelse(SiteName=="Garland", 72, 
+                                ifelse(SiteName=="SleepyHollow", 114, 
+                                 ifelse(SiteName=="Stonepine", 103, 
+                                   ifelse(SiteName=="UIZ", 128, 
+                                      ifelse(SiteName=="Cachagua", 164, 
+                                         ifelse(SiteName=="Los Compadres", 134, NA)))))))))
+  
+    PSdat$OccCode = "DEP"
+      PSdat$CaptureYear <- 2021
+      PSdat$DNAID <- NA
       
-  head(coryDat)  
-  unique(coryDat$Location)
-                    
-                    
-  fallpop <- c("Pop Survey", "CDFW Pop Survey")
-  corySum <- coryDat %>% filter(Method %in% fallpop) %>% 
-    group_by(Location, Date) %>% 
-    summarise(n())
-  write_csv(corySum, "C:/Users/HaleyOhms/Documents/Carmel/DATA/CoryMain.csv")
-
-  origSum <- oldDat %>% filter(year(Date) < 2018) %>% 
-    group_by(SiteID, Date) %>% 
-    summarise(n())
-  write_csv(origSum, "C:/Users/HaleyOhms/Documents/Carmel/DATA/OrigCompile.csv")
-
-  AFDSum <- AFD %>% filter(year(Date) < 2018) %>%
-    group_by(SiteID, Date) %>% 
-    summarise(n())
-  write_csv(AFDSum, "C:/Users/HaleyOhms/Documents/Carmel/DATA/AFDCompile.csv")
-  
-############################################################################
-############################################################################
-############################################################################
-############################################################################
-############################################################################
-############################################################################
-
-## CODE FROM 2020: 
-
-## DONT DO THIS! BUT NEED TO CHECK FOR TAGS WITH SPACES!!
-#AFD$PITnum2 = as.character(sub(" ", "", AFD[,"PITnum"])) # Remove space from PITnum
-
-#AFD <- AFD[!(is.na(AFD$Date)) , ] #remove empty junk from excel
-
-head(AFD)
-
-############################################################################################
-############################################################################################
-## Compile Adult Data Collected at Los Padres Adult Trap
-############################################################################################
-############################################################################################
-dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/NMFS_Data/Adults_LosPadres/2020 Adult Tagging/"
-
-files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
-bnames = basename(files)
-bnames = sub('.xlsx', '',bnames)
-
-for(i in 1:length(files)){
-  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
-                   colClasses = c("character","Date", "character", "numeric", "character", "numeric", 
-                                  "character","character", "character", "character", "character"),
-                   stringsAsFactors=FALSE)
-  if(i == 1){
-    adf = tbl
-  } else{
-    adf = rbind(adf, tbl)
-  }
-}
-
-colnames(adf) <- c("SiteID", "Date", "Species", "FishNum", "Sex", "FL_mm", "PITnum", "TagorNot", 
-                  "DNAsamp", "Scales", "Recap","Notes")
-
-adf$DNAsamp <- adf$DNAsamp=="Y" | adf$DNAsamp=="T" ### convert character fields to logical fields
-adf$Scales <- adf$Scales=="Y" | adf$Scales=="T"
-adf$Recap <- adf$Recap=="Y" | adf$Recap=="T"
-adf$Pass<-NA
-adf$Wt_g<-NA
-adf$TagSize<-23
-adf$SiteTo<-NA
-adf$TagorNot<-NULL
-adf<-adf[!adf$SiteID=="" , ]
-unique(adf$Species)
-  adf$Species[adf$Species=="O. mykiss"] <- "Om"
-adf$FL_mm <- adf$FL_mm*10 #convert length from cm to mm
-unique(adf$PITnum)
-  adf$PITnum[adf$PITnum=="n/a"] <- NA  
-  adf$PITnum[adf$PITnum==""] <- NA
-  adf$PITnum = as.character(sub(" ", "", adf[,"PITnum"])) # Remove space from PITnum
-  
-AFD <- rbind(adf, AFD)
-AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
-
-write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
-
-
-#######################################################################################3
-
-############################################################################################
-############################################################################################
-## Compile Rotary Screw Trap Fish Data Collected at Above Los Padres Reservoir
-############################################################################################
-############################################################################################
-
-dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/NMFS_Data/Rotary Screw Trap/2020 RST Tagging/"
-
-files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
-bnames = basename(files)
-bnames = sub('.xlsx', '',bnames)
-
-for(i in 1:length(files)){
-  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
-                   colClasses = c("character","Date", "character", "numeric", "numeric", "numeric", 
-                                  "character","numeric", "character", "character", "character", "character","character"),
-                   stringsAsFactors=FALSE)
-  if(i == 1){
-    rstdf = tbl
-  } else{
-    rstdf = rbind(rstdf, tbl)
-  }
-}
-
-colnames(rstdf) <- c("SiteID", "Date", "Species", "FishNum", "FL_mm", "Wt_g", "PITnum", "TagSize", "TagorNot", 
-                  "DNAsamp", "Scales", "Recap","Notes")
-
-rstdf<-rstdf[!rstdf$SiteID=="" , ] #remove blank columns; thanks excel... not
-rstdf<-rstdf[!rstdf$SiteID==" " , ]
-
-rstdf$DNAsamp <- rstdf$DNAsamp=="Y" | rstdf$DNAsamp=="T"
-rstdf$Scales <- rstdf$Scales=="Y" | rstdf$Scales=="T"
-rstdf$Recap <- rstdf$Recap=="Y" | rstdf$Recap=="T"
-rstdf$TagorNot<-NULL
-rstdf$Sex<-NA
-rstdf$Pass<-NA
-rstdf$SiteTo<-NA
-# unique(rstdf$Notes)
-#  unique(rstdf$Species)
-  rstdf$Species[rstdf$Species=="O. mykiss"] <- "Om"
-  # rstdf$Species[rstdf$Species=="O. Mykiss"] <- "Om"
-  # rstdf$Species[rstdf$Species=="S. trutta"] <- "St"
-  # rstdf$Species[rstdf$Species=="S. Trutta"] <- "St"
-  rstdf$TagSize <- as.integer(rstdf$TagSize)
-  
-rstdf$TagSize[which(!rstdf$PITnum=="" & is.na(rstdf$TagSize))] <- 12
-rstdf$PITnum = as.character(sub(" ", "", rstdf[,"PITnum"])) # Remove space from PITnum
-
-
-#... combine the rst and AFD data    
-AFD <- rbind(AFD, rstdf)
-AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
-
-write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
-
-#write_csv(rstdf,"C:/Users/HaleyOhms/Documents/Carmel/Data Deliveries/2019RST.csv")
-
-
-############################################################################################
-############################################################################################
-## Compile 2020 MPWMD Sleepy Rearing Rescues
-############################################################################################
-############################################################################################
-
-#########################
-## CORY"S DATA ##
-#########################
-
-#rm(list=ls())
-require(dplyr)
-require(tidyverse)
-require(lubridate)
-require(xlsx)
-# require(ggplot2)
-
-dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FishRescues/2020 Rescues/Sleepy Reared Rescues/"
-
-files = list.files(dir, '*.txt', recursive = F, full.names = TRUE) 
-bnames = basename(files)
-bnames = sub('.txt', '',bnames)
-
-for(i in 1:length(files)){
-  tbl<-read.table(files[i], header=FALSE, sep="|")
-  
-  pieces = unlist(strsplit(bnames[i], '_'))
-  tbl$site = pieces[1]
-  tbl$date = pieces[2]
-  
-  if(i == 1){
-    dfr = tbl
-  } else{
-    dfr = rbind(dfr, tbl)
-  }
-}
-
-colnames(dfr)<-c("FishNum","FL_mm", "Wt_g","PITnum","Recap","TagSize","DNAsamp","Notes","Date","Time","SiteID","Date2")
-head(dfr)
-
-#Clean up formatting
-dfr$FishNum<-substring(dfr$FishNum, 2)
-dfr$FishNum<-as.numeric(dfr$FishNum)
-dfr$Time<-NULL
-dfr$Date2<-as.character(dfr$Date2)
-dfr$Date<-as.Date(dfr$Date2, "%y%m%d" )
-dfr$Date2<-NULL
-unique(dfr$Notes)
-
-dfr$Recap <- dfr$Recap=="Yes"
-
-
-#Tags to 15 digits
-dfr$pre<-substr(dfr$PITnum, start=1, stop=2)
-dfr$PITnum<-ifelse(dfr$pre=="R0",substring(dfr$PITnum, 7),substring(dfr$PITnum, 9)) 
-dfr$pre<-NULL 
-
-dfr$DNAsamp <- dfr$DNAsamp=="Yes"
-
-
-#Add columns to match fish data
-dfr$Pass<-NA
-dfr$Scales<-FALSE
-dfr$SiteTo<-"TBD"
-#dfr$SiteGRTS<-"TBD"
-
-#Notes = SiteID in this case
-dfr$SiteID <- dfr$Notes
-dfr$Notes <- NA
-
-dfr$Species <- "Om"
-dfr$Sex <- NA
-
-
-#########################
-## UCSC CREW DATA ##
-#########################
-#dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FishRescues/2020 Rescues/Sleepy Reared Rescues/"
-
-files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
-bnames = basename(files)
-bnames = sub('.xlsx', '',bnames)
-
-
-for(i in 1:length(files)){
-  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
-                   colClasses = c("character","Date", "numeric", "numeric", "numeric", "numeric",
-                                  "character","numeric", "character", "character", "character", "character","character"),
-                   stringsAsFactors=FALSE)
-  tbl <- tbl[!(is.na(tbl$Date)) , ] #remove empty junk from excel
-  
-  if(i == 1){
-    rstdf = tbl
-  } else{
-    rstdf = rbind(rstdf, tbl)
-  }
-}
-
-colnames(rstdf) <- c("SiteID", "Date", "FishNum", "Pass", "FL_mm", "Wt_g", "PITnum", "TagSize", 
-                     "DNAsamp", "Scales", "Recap", "Species", "Notes")
-
-rstdf$DNAsamp <- rstdf$DNAsamp=="Y" | rstdf$DNAsamp=="T"
-rstdf$Scales <- rstdf$Scales=="Y" | rstdf$Scales=="T"
-rstdf$Recap <- rstdf$Recap=="Y" | rstdf$Recap=="T"
-rstdf$Sex<-NA
-rstdf$Pass<-NA
-rstdf$SiteTo<-"TBD"
-# unique(rstdf$Notes)
-#  unique(rstdf$Species)
-rstdf$Species[rstdf$Species=="Omy"] <- "Om"
-rstdf$Species[rstdf$Species=="OMY"] <- "Om"
-rstdf$TagSize <- as.integer(rstdf$TagSize)
-
-rstdf$PITnum = as.character(sub(" ", "", rstdf[,"PITnum"])) # Remove space from PITnum
-
-#... combine Cory's and NOAA data
-SHDat <- rbind(rstdf, dfr)
-  SHDat$SiteID = as.character(sub("_", "", SHDat[,"SiteID"])) # Standardize SiteIDs
-  SHDat$SiteID = as.character(sub("C0", "C", SHDat[,"SiteID"])) 
-  SHDat$SiteID = as.character(sub(" ", "", SHDat[,"SiteID"])) 
-
-  SHDat$PITnum[SHDat$PITnum==""] <- NA
-  
-#... combine the dfr and AFD data    
-AFD <- rbind(AFD, SHDat)
-  AFD <- distinct(AFD, Date, Species, FishNum, FL_mm, Wt_g, PITnum, Recap, .keep_all=T)
-
-  write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
-
-
-# Data export for Cory: 
-write_csv(SHDat,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/SHRF_TaggingData_2020.csv")
-
-
-############################################################################################
-############################################################################################
-## Compile 2020 Rescue and Release
-############################################################################################
-############################################################################################
-
-#rm(list=ls())
-require(dplyr)
-require(tidyverse)
-require(lubridate)
-require(xlsx)
-
-
-dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/MPWMD_Data/MPWMD_FishRescues/2020 Rescues/2020 rescue and release/"
-
-files = list.files(dir, '*.txt', recursive = F, full.names = TRUE) 
-bnames = basename(files)
-bnames = sub('.txt', '',bnames)
-
-for(i in 1:length(files)){
-  tbl<-read.table(files[i], header=FALSE, sep="|")
-  
-  pieces = unlist(strsplit(bnames[i], '_'))
-  tbl$site = pieces[1]
-  tbl$date = pieces[2]
-  
-  if(i == 1){
-    dfr = tbl
-  } else{
-    dfr = rbind(dfr, tbl)
-  }
-}
-
-colnames(dfr)<-c("FishNum","FL_mm", "Wt_g","PITnum","Recap","TagSize","DNAsamp","Notes","Date","Time","SiteID","Date2")
-head(dfr)
-
-#Clean up formatting
-dfr$FishNum<-substring(dfr$FishNum, 2)
-dfr$FishNum<-as.numeric(dfr$FishNum)
-dfr$Time<-NULL
-dfr$Date2<-as.character(dfr$Date2)
-dfr$Date<-as.Date(dfr$Date2, "%y%m%d" )
-dfr$Date2<-NULL
-unique(dfr$Notes)
-
-dfr$Recap <- dfr$Recap=="Yes"
-
-
-#Tags to 15 digits
-dfr$pre<-substr(dfr$PITnum, start=1, stop=2)
-dfr$PITnum<-ifelse(dfr$pre=="R0",substring(dfr$PITnum, 7),substring(dfr$PITnum, 9)) 
-dfr$pre<-NULL 
-
-dfr$DNAsamp <- dfr$DNAsamp=="Yes"
-
-
-#Add columns to match fish data
-dfr$Pass<-NA
-dfr$Scales<-FALSE
-dfr$SiteTo<-"TBD"
-#dfr$SiteGRTS<-"TBD"
-
-dfr$Species <- "Om"
-dfr$Sex <- NA
-
-#... combine the dfr and AFD data    
-AFD <- rbind(AFD, dfr)
-AFD <- distinct(AFD, Date, Species, FishNum, FL_mm, Wt_g, PITnum, Recap, .keep_all=T)
-
-write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
-
-  
-############################################################################################
-############################################################################################
-## Compile 2020 Pop Survey Data
-############################################################################################
-############################################################################################
-
-
-dir = "C:/Users/HaleyOhms/Documents/Carmel/DATA/NMFS_Data/TaggingHabitatScouting/2020/2020 POP Surveys/PIT Tagging"
-
-files = list.files(dir, '*.xlsx', recursive = F, full.names = TRUE) 
-bnames = basename(files)
-bnames = sub('.xlsx', '',bnames)
-
-for(i in 1:length(files)){
-  tbl = read.xlsx2(files[i], sheetIndex = 1, startRow = 1, 
-                   colClasses = c("character","Date", "numeric", "numeric", "numeric", "numeric",
-                                  "character","numeric", "character", "character", "character", "character", "character"),
-                   stringsAsFactors=FALSE)
-  #remove empty junk from excel
-  tbl <- tbl[,1:13]
-  tbl <- tbl[!(is.na(tbl$Date)) , ] 
-  
-  if(i == 1){
-    fallpop = tbl
-  } else{
-    fallpop = rbind(fallpop, tbl)
-  }
-}
-
-colnames(fallpop) <- c("SiteID", "Date", "FishNum", "Pass", "FL_mm", "Wt_g", "PITnum", "TagSize",  
-                       "DNAsamp", "Scales", "Recap", "Species", "Notes")
-
-fallpop$DNAsamp <- fallpop$DNAsamp=="Y" | fallpop$DNAsamp=="T"
-fallpop$Scales <- fallpop$Scales=="Y" | fallpop$Scales=="T"
-fallpop$Recap <- fallpop$Recap=="Y" | fallpop$Recap=="T"
-fallpop$Sex<-NA
-fallpop$SiteTo<-NA
-fallpop$TagSize <- as.integer(fallpop$TagSize)
-fallpop$PITnum = as.character(sub(" ", "", fallpop[,"PITnum"])) # Remove space from PITnum
-
-unique(fallpop$Notes)
-
-
-#... Clean up morts
-fallpop$Notes[fallpop$Notes=="RECAP"] <- "" 
-fallpop$Notes[fallpop$Notes=="MORT"] <- "Mort"
-fallpop$Notes[fallpop$Notes==" NO WEIGHT"] <- "" 
-fallpop$Notes[fallpop$Notes=="EFISHING MORT"] <- "Mort"
-fallpop$Notes[fallpop$Notes=="EUTHANIZED "] <- "Mort"
-
-fallpop[fallpop$Notes=="RECAP GARLAND",]
-
-#... Clean up tag numbers
-fallpop$PITnum[fallpop$PITnum==""] <- NA
-fallpop$PITnum[fallpop$PITnum=="NA"] <- NA
-
-#... Clean up species names
-fallpop$Species[fallpop$Species=="STR"] <- "St"
-fallpop$Species[fallpop$Species=="Str"] <- "St"
-fallpop$Species[fallpop$Species=="Omy"] <- "Om"
-
-
-#... Duplicate tags
-dupDat <- filter(fallpop, Recap==F, !is.na(PITnum)) #Non-recaps
-dupTags <- dupDat[which(duplicated(dupDat$PITnum)==T) , ]
-idx <- duplicated(dupDat$PITnum) | duplicated(dupDat$PITnum, fromLast = TRUE) 
-AlldupTags <- dupDat[idx, ] 
-
-fallpop$Notes[which(fallpop$PITnum=="900228000688712")] <- "Tag #900228000688712, duplicate, removed"
-fallpop$PITnum[fallpop$PITnum=="900228000688712"] <- NA
-
-
-
-
-#... combine the rst and AFD data    
-AFD <- rbind(AFD, fallpop)
-AFD <- distinct(AFD, SiteID, Date, FishNum, FL_mm, Wt_g, PITnum, TagSize, DNAsamp, Recap, .keep_all=T)
-
-
-write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
-
-# #... Fall pop data for DB
-# #save(fallpop, file="C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/2020fallPop_forDB.Rda")
-# load("C:/Users/HaleyOhms/Documents/Carmel/DATA/Data Deliveries/2020fallPop_forDB.Rda")
-# 
-# #... Permit reporting for Dave Rundio
-# 
-# unique(fallpop$SiteID)
-# 
-# NOAAsites <- c("166", "239", "345", "121", "122", "70", "84", "92")
-# 
-# fallpop2 <- fallpop %>% filter(SiteID %in% NOAAsites) %>% 
-#   filter(!is.na(PITnum) | DNAsamp==T | Scales ==T)
-
-#############################################
-## Update SHRC rescues with SiteTo locations
-#############################################
-
-AFD$SiteTo[which(AFD$Date=="2020-11-03" & AFD$FL_mm < 121)] <- "shw, dam keep house"
-  AFD$SiteTo[which(AFD$Date=="2020-11-03" & AFD$FL_mm > 120)] <- "Redrock"
-AFD$SiteTo[which(AFD$Date=="2020-11-04" & AFD$FL_mm < 121)] <- "sleepy hollow, lower circle"
-  AFD$SiteTo[which(AFD$Date=="2020-11-04" & AFD$FL_mm > 120)] <- "Robinson cyn bridge"
-AFD$SiteTo[which(AFD$Date=="2020-11-05" & AFD$FL_mm < 121)] <- "Boronda, Scarlett"
-  AFD$SiteTo[which(AFD$Date=="2020-11-05" & AFD$FL_mm > 120)] <- "Redrock"
-AFD$SiteTo[which(AFD$Date=="2020-11-06" & AFD$FL_mm < 121)] <- "West Garzas"
-  AFD$SiteTo[which(AFD$Date=="2020-11-06" & AFD$FL_mm > 120)] <- "River meadows"
-AFD$SiteTo[which(AFD$Date=="2020-11-09" & AFD$FL_mm < 121)] <- "Garland"
-  AFD$SiteTo[which(AFD$Date=="2020-11-09" & AFD$FL_mm > 120)] <- "River meadows"
-AFD$SiteTo[which(AFD$Date=="2020-11-10" & AFD$FL_mm < 160)] <- "Schulte Bridge"
-  AFD$SiteTo[which(AFD$Date=="2020-11-10" & AFD$FL_mm > 159)] <- "Schulte Well"
-AFD$SiteTo[which(AFD$Date=="2020-11-12" & AFD$FL_mm < 160)] <- "Meadows Rd"
-  AFD$SiteTo[which(AFD$Date=="2020-11-12" & AFD$FL_mm > 159)] <- "Cypress Well"
-  
-write_csv(AFD,"C:/Users/HaleyOhms/Documents/Carmel/DATA/Database/AllFishData.csv")
-  
-  
+      earlySites <- c(52, 80, 72)
+      PSdat <- PSdat %>% mutate(DataEntryNotes = ifelse(SiteID %in% earlySites, "Used both computer and hand-held to record data, combined excel and text files for this final data entry, H. Ohms Nov 2021", 
+                                                        "Compiled from reader .txt files by H. Ohms, Nov 2021"))
+    
+      PSdat$FishGroup <- NA
+      max(FishData$FishID)
+      
+      PSdat[,"FishID"] <- seq(67018, 68797, by=1) 
+      PSdat$Pass <- NULL
+      PSdat$Sex <- NA
+      PSdat$SiteTo <- NA
+      PSdat$Year <- 2021
+      PSdat$LifeForm <- NA
+      PSdat <- PSdat %>% mutate(OccID = paste("DEP", Date, SiteID, sep = "-"))
+    
+      
+      sort(names(PSdat))
+      sort(names(FishData))
+      
+      FishData <- rbind(FishData, PSdat)
+      
+      # rm(BorDat, FishData2, PSdat, ScarDat, t, tbl2Bor, tbl2Scar, tblBor, tblCach, 
+      #    tblGar, tblLC, tblScar, tblSH, tblSP, tblUIZ)
+
+      save(Captive, Dam, Depletion, FishData, Flow,
+           Frame, ReaderData, ReaderMetaDataBiomark, ReaderMetaDataORFID, 
+           Redd, Station, Temperature, Translocation, XS, file="C:/Users/HaleyOhms/Documents/GitHub/Carmel_Database/carmel_river_mykiss_20211119.RData")
+
+
+      load(file="C:/Users/HaleyOhms/Documents/GitHub/Carmel_Database/carmel_river_mykiss.RData")
+
+
+####################################################################    
